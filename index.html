@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>모바일 기출문제 퀴즈</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .quiz-container {
+            background: #ffffff;
+            width: 100%;
+            max-width: 480px; /* 스마트폰 최적화 크기 */
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+        .progress {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        .question {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .option-btn {
+            background-color: #f8f9fa;
+            border: 2px solid #e9ecef;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .option-btn:active {
+            transform: scale(0.98);
+        }
+        .option-btn.correct {
+            background-color: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            font-weight: bold;
+        }
+        .option-btn.incorrect {
+            background-color: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+            font-weight: bold;
+        }
+        .result-screen {
+            text-align: center;
+        }
+        .restart-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 14px;
+            width: 100%;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container" id="app">
+    <div id="loading">문제를 불러오는 중입니다...</div>
+</div>
+
+<script>
+    let questions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let answered = false;
+
+    // JSON 파일 불러오기
+    fetch('questions.json')
+        .then(response => response.json())
+        .then(data => {
+            questions = data;
+            renderQuiz();
+        })
+        .catch(error => {
+            document.getElementById('app').innerHTML = '<p style="color:red;">문제 파일을 불러오지 못했습니다. questions.json 파일이 같은 경로에 있는지 확인해주세요.</p>';
+            console.error('Error:', error);
+        });
+
+    function renderQuiz() {
+        const app = document.getElementById('app');
+        
+        if (currentIndex >= questions.length) {
+            // 결과 화면
+            app.innerHTML = `
+                <div class="result-screen">
+                    <h2>🎉 퀴즈 완료!</h2>
+                    <p style="font-size: 18px; margin: 20px 0;">총 <strong>${questions.length}문제</strong> 중 <br><strong style="color: #007bff; font-size: 24px;">${score}개</strong>를 맞추셨습니다!</p>
+                    <button class="restart-btn" onclick="restartQuiz()">처음부터 다시 풀기</button>
+                </div>
+            `;
+            return;
+        }
+
+        const q = questions[currentIndex];
+        answered = false;
+
+        let html = `
+            <div class="progress">문제 ${currentIndex + 1} / ${questions.length}</div>
+            <div class="question">${q.question}</div>
+            <div class="options-list">
+        `;
+
+        q.options.forEach((opt, idx) => {
+            html += `<button class="option-btn" onclick="checkAnswer(${idx + 1}, this)">${idx + 1}. ${opt}</button>`;
+        });
+
+        html += `</div>`;
+        app.innerHTML = html;
+    }
+
+    function checkAnswer(selectedNumber, buttonElement) {
+        if (answered) return; // 중복 클릭 방지
+        answered = true;
+
+        const q = questions[currentIndex];
+        const buttons = document.querySelectorAll('.option-btn');
+
+        // 정답/오답 스타일 표시
+        if (selectedNumber === q.answer) {
+            buttonElement.classList.add('correct');
+            score++;
+        } else {
+            buttonElement.classList.add('incorrect');
+            // 정답 버튼도 초록색으로 표시
+            buttons[q.answer - 1].classList.add('correct');
+        }
+
+        // 1.2초 후 다음 문제로 자동 이동
+        setTimeout(() => {
+            currentIndex++;
+            renderQuiz();
+        }, 1200);
+    }
+
+    function restartQuiz() {
+        currentIndex = 0;
+        score = 0;
+        renderQuiz();
+    }
+</script>
+
+</body>
+</html>
